@@ -1,5 +1,7 @@
 const express = require('express')
 const app = express()
+const PORT = 3001
+const morgan = require('morgan')
 
 let persons = [
     {
@@ -25,34 +27,11 @@ let persons = [
 ]
 
 app.use(express.json())
+app.use(morgan('tiny'))
+
 
 app.get('/api/persons', (req, res) => {
     res.send(persons)
-})
-
-app.post('/api/persons', (req, res) => {
-    const data = req.body
-
-    if(!data.number || !data.name) {
-       return res.status(400).send({
-            error: "missing data"
-        })
-    } else if (persons.find(person => person.name === data.name)) {
-        return res.status(409).send({
-            error: "name must be unique"
-        })
-    }
-
-
-    const person = {
-        name: data.name,
-        number: data.number,
-        id: Math.floor(Math.random()*100000)
-    }
-
-    persons.push(person)
-
-    res.status(201).send(person)
 })
 
 app.get('/info', (req, res) => {
@@ -85,7 +64,34 @@ app.delete('/api/persons/:id', (req, res) => {
     res.status(204).end()
 })
 
-const PORT = 3001
+morgan.token('body', (req, res) => JSON.stringify(req.body))
+app.use(morgan(':body'))
+
+app.post('/api/persons', (req, res) => {
+    const data = req.body
+
+    if(!data.number || !data.name) {
+       return res.status(400).send({
+            error: "missing data"
+        })
+    } else if (persons.find(person => person.name === data.name)) {
+        return res.status(409).send({
+            error: "name must be unique"
+        })
+    }
+
+
+    const person = {
+        name: data.name,
+        number: data.number,
+        id: Math.floor(Math.random()*100000)
+    }
+
+    persons.push(person)
+
+    res.status(201).send(person)
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
