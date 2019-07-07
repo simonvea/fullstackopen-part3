@@ -1,7 +1,8 @@
 const express = require('express')
-const app = express()
-const PORT = 3001
+const cors = require('cors')
 const morgan = require('morgan')
+const app = express()
+const PORT = process.env.PORT || 3001
 
 let persons = [
     {
@@ -26,9 +27,9 @@ let persons = [
     },
 ]
 
+app.use(cors())
 app.use(express.json())
 app.use(morgan('tiny'))
-
 
 app.get('/api/persons', (req, res) => {
     res.send(persons)
@@ -64,7 +65,7 @@ app.delete('/api/persons/:id', (req, res) => {
     res.status(204).end()
 })
 
-morgan.token('body', (req, res) => JSON.stringify(req.body))
+morgan.token('body', (req, res) => JSON.stringify(req.body)) //loggs the POST req body
 app.use(morgan(':body'))
 
 app.post('/api/persons', (req, res) => {
