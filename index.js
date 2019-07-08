@@ -1,8 +1,10 @@
+require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
+const Person = require('./models/person')
 const app = express()
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 
 let persons = [
     {
@@ -32,36 +34,39 @@ app.use(express.static('build'))
 app.use(express.json())
 app.use(morgan('tiny'))
 
-app.get('/api/persons', (req, res) => {
-    res.send(persons)
+app.get('/api/people', (req, res) => {
+    Person.find({}).then(people => res.send(people))
 })
 
 app.get('/info', (req, res) => {
-    const numberOfEntries = persons.length
-    const time = new Date().toLocaleString()
-    const html = `
-        <p> Phonebook has info for ${numberOfEntries} people. </p>
-        <p> ${time} </p>
-    `
-    res.send(html)
+    Person.find({}).then(people => {
+        const numberOfEntries = people.length
+        const time = new Date().toLocaleString()
+        const html = `
+            <p> Phonebook has info for ${numberOfEntries} people. </p>
+            <p> ${time} </p>
+        `
+        res.send(html)
+    })
 })
 
-app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(pers => pers.id === id)
+app.get('/api/people/:id', (req, res) => {
+    Person.findById(req.params.id).then(person => {
+        if(person) {
+            res.send(person.toJSON())
+        } else {
+            res.status(400).send({
+                error: "no person found"
+            })
+        }
+    })
 
-    if(person) {
-        res.send(person)
-    } else {
-        res.status(400).send({
-            error: "no person found"
-        })
-    }
+    
 })
 
-app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    persons = persons.filter(pers => pers.id !== id)
+app.delete('/api/people/:id', (req, res, next) => {
+    
+    Person.deleteOne({_id: req.params.id},next)
 
     res.status(204).end()
 })
@@ -69,29 +74,28 @@ app.delete('/api/persons/:id', (req, res) => {
 morgan.token('body', (req, res) => JSON.stringify(req.body)) //loggs the POST req body
 app.use(morgan(':body'))
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/people', (req, res) => {
     const data = req.body
 
     if(!data.number || !data.name) {
        return res.status(400).send({
             error: "missing data"
         })
-    } else if (persons.find(person => person.name === data.name)) {
+    } /* else if (persons.find(person => person.name === data.name)) {
         return res.status(409).send({
             error: "name must be unique"
         })
-    }
+    } */
 
 
-    const person = {
+    const person = new Person({
         name: data.name,
         number: data.number,
-        id: Math.floor(Math.random()*100000)
-    }
+    })
 
-    persons.push(person)
-
-    res.status(201).send(person)
+    person.save().then(result => {
+        res.status(201).send(result.toJSON())
+    })    
 })
 
 app.listen(PORT, () => {

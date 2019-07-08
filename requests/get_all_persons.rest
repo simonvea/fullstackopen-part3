@@ -1,1 +1,1 @@
-GET https://gentle-beach-69557.herokuapp.com/api/persons
+GET http://localhost:3001/api/people
